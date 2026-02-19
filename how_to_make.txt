@@ -1,0 +1,593 @@
+================================================================
+                   LIGGS — HOW TO MAKE
+         A Step-by-Step Build Guide From Scratch
+================================================================
+
+This guide walks you through how Liggs was built from the
+ground up — every file, every decision, and every line of
+logic explained so you can recreate it or learn from it.
+
+----------------------------------------------------------------
+WHAT YOU WILL NEED
+----------------------------------------------------------------
+
+  - Python 3.7 or higher
+  - pip (Python package manager)
+  - A code editor (VS Code recommended)
+  - A web browser
+  - Basic knowledge of Python, HTML, CSS, and JavaScript
+
+
+----------------------------------------------------------------
+STEP 1 — SET UP THE PROJECT FOLDER
+----------------------------------------------------------------
+
+Create the following folder structure manually:
+
+  liggs/
+  ├── app.py
+  ├── templates/
+  │     └── index.html
+  ├── static/
+  │     ├── style.css
+  │     └── script.js
+  └── how_to_use.txt
+
+In your terminal:
+
+  mkdir liggs
+  cd liggs
+  mkdir templates static
+
+Then install Flask:
+
+  pip install flask
+
+
+----------------------------------------------------------------
+STEP 2 — BUILD THE BACKEND (app.py)
+----------------------------------------------------------------
+
+The backend is a single Python file using Flask.
+Here is what it needs to do:
+
+  A) IMPORTS & SETUP
+  ------------------
+  Import Flask, SQLite3, hashlib, secrets, and other
+  standard libraries. Create the Flask app and set a
+  secret key for sessions:
+
+      from flask import Flask, render_template, request,
+                        jsonify, send_file, session
+      import sqlite3, os, io, hashlib, secrets
+      from datetime import datetime
+      from functools import wraps
+
+      app = Flask(__name__)
+      app.secret_key = secrets.token_hex(32)
+
+
+  B) DATABASE SETUP
+  -----------------
+  Use SQLite for storage. Define a function to get a
+  database connection and another to initialize the tables:
+
+      def get_db():
+          conn = sqlite3.connect('liggs.db')
+          conn.row_factory = sqlite3.Row
+          return conn
+
+  Create two tables on startup:
+
+      users table:
+        - id (primary key)
+        - username (unique)
+        - password (hashed)
+        - created_at
+
+      notes table:
+        - id (primary key)
+        - user_id (foreign key to users)
+        - title
+        - content
+        - created_at
+        - updated_at
+
+  Call init_db() when the app starts so the database and
+  tables are created automatically on first run.
+
+
+  C) PASSWORD HASHING
+  -------------------
+  Never store plain text passwords. Use SHA-256:
+
+      def hash_password(password):
+          return hashlib.sha256(password.encode()).hexdigest()
+
+
+  D) LOGIN REQUIRED DECORATOR
+  ---------------------------
+  Protect note routes so only logged-in users can access them:
+
+      def login_required(f):
+          @wraps(f)
+          def decorated(*args, **kwargs):
+              if 'user_id' not in session:
+                  return jsonify({'error': 'Not authenticated'}), 401
+              return f(*args, **kwargs)
+          return decorated
+
+
+  E) AUTH ROUTES
+  --------------
+  Build three auth endpoints:
+
+      POST /api/register
+        - Validate username and password
+        - Hash the password
+        - Insert into users table
+        - Start a session
+        - Return success or error
+
+      POST /api/login
+        - Look up user by username and hashed password
+        - Start a session if found
+        - Return success or error
+
+      POST /api/logout
+        - Clear the session
+        - Return success
+
+      GET /api/me
+        - Return whether the user is authenticated
+        - Used on page load to decide what to show
+
+
+  F) NOTES ROUTES
+  ---------------
+  Build full CRUD endpoints, all protected by @login_required:
+
+      GET  /api/notes          → List all notes for current user
+                                 Supports ?q= for search
+      POST /api/notes          → Create a new note
+      GET  /api/notes/<id>     → Get a single note by ID
+      PUT  /api/notes/<id>     → Update title and content
+      DELETE /api/notes/<id>   → Delete a note
+      GET  /api/notes/<id>/export → Download note as .txt file
+
+  Always filter by user_id so users only see their own notes.
+  Update the updated_at field on every PUT request.
+
+  For export, build the text content in memory using io.BytesIO
+  and send it with Flask's send_file().
+
+
+  G) MAIN ROUTE
+  -------------
+  One route to serve the frontend:
+
+      @app.route('/')
+      def index():
+          return render_template('index.html')
+
+
+  H) RUN THE APP
+  --------------
+  At the bottom of app.py:
+
+      if __name__ == '__main__':
+          app.run(debug=True, port=5000)
+
+
+----------------------------------------------------------------
+STEP 3 — BUILD THE HTML (templates/index.html)
+----------------------------------------------------------------
+
+The HTML file is the skeleton of the entire app.
+It has four main sections:
+
+
+  A) HEAD
+  -------
+  Link Google Fonts (Syne for headings, DM Mono for body),
+  your CSS file, and set the viewport for mobile.
+
+
+  B) UFO INTRO SCREEN
+  -------------------
+  A full-screen overlay div that shows on page load:
+
+      <div id="intro-screen">
+        <div class="stars" id="stars"></div>
+        <div class="ufo-wrapper" id="ufoWrapper">
+          <div class="ufo">
+            <div class="ufo-beam"></div>
+            <div class="ufo-body">
+              <div class="ufo-dome"></div>
+              <div class="ufo-saucer">
+                <div class="ufo-lights">
+                  <span></span> × 6
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="intro-logo">LIGGS</div>
+      </div>
+
+  The UFO is made entirely of HTML divs styled with CSS.
+  No images or external assets needed.
+
+
+  C) AUTH MODAL
+  -------------
+  A centered modal with two tabs — Sign In and Register:
+
+      <div id="authModal" class="modal hidden">
+        <div class="modal-box">
+          <!-- Logo, tabs, error message, login form,
+               register form -->
+        </div>
+      </div>
+
+  Both forms are inside the same modal. JavaScript toggles
+  which form is visible based on the active tab.
+
+
+  D) MAIN APP
+  -----------
+  Hidden on load, revealed after authentication:
+
+      <div id="app" class="hidden">
+
+        <!-- Top bar with logo, search input, username,
+             and logout button -->
+        <header class="topbar"> ... </header>
+
+        <div class="main-layout">
+
+          <!-- Sidebar with new note button and notes list -->
+          <aside class="sidebar"> ... </aside>
+
+          <!-- Editor area with empty state and note editor -->
+          <main class="editor-area">
+
+            <!-- Shown when no note is selected -->
+            <div class="empty-state" id="emptyState"> ... </div>
+
+            <!-- Shown when a note is open -->
+            <div class="note-editor hidden" id="noteEditor">
+              <!-- Toolbar: save status, export, save,
+                   delete buttons -->
+              <!-- Title input -->
+              <!-- Content textarea -->
+              <!-- Meta info (created/updated dates) -->
+            </div>
+
+          </main>
+        </div>
+      </div>
+
+  Link your script.js at the bottom of the body.
+
+
+----------------------------------------------------------------
+STEP 4 — BUILD THE STYLES (static/style.css)
+----------------------------------------------------------------
+
+The CSS handles everything: the UFO animation, dark theme,
+layout, and all interactive states.
+
+
+  A) CSS VARIABLES
+  ----------------
+  Define all colors and sizes at the top using :root so
+  you can change the theme from one place:
+
+      :root {
+        --bg:       #080c12;
+        --surface:  #141e2e;
+        --accent:   #00d4ff;
+        --text:     #c8dff0;
+        --danger:   #ff3b5c;
+        --success:  #00ff9f;
+        --sidebar-w: 260px;
+        --topbar-h:  56px;
+      }
+
+
+  B) UFO ANIMATION
+  ----------------
+  This is the most complex part of the CSS. Here's the logic:
+
+  Stars:
+    - JavaScript creates 180 div.star elements
+    - Each has random size, position, and animation duration
+    - CSS animates opacity and scale (twinkle effect)
+
+  UFO wrapper animation — three keyframes chained:
+    - ufoFlyIn: moves from top:-180px to top:35% (flies in)
+    - ufoHover: moves up and down slightly (hovering)
+    - ufoFlyOut: moves to top:-300px and off to the side
+
+      .ufo-wrapper {
+        animation:
+          ufoFlyIn 1.0s ... 0.3s forwards,
+          ufoHover 0.8s ... 1.5s 2 alternate,
+          ufoFlyOut 0.6s ... 3.5s forwards;
+      }
+
+  UFO parts:
+    - .ufo-dome: rounded top half (the cockpit bubble)
+    - .ufo-saucer: wide ellipse (the flying disc body)
+    - .ufo-beam: CSS triangle pointing downward, blurred
+    - .ufo-lights: 6 colored circles that blink with delays
+
+  Intro screen fade out:
+    - The entire intro div fades out at 4.2 seconds
+    - JavaScript hides it completely at 4.9 seconds
+
+  Intro logo:
+    - "LIGGS" text fades in at 3.0 seconds
+    - Has a cyan text-shadow glow effect
+
+
+  C) LAYOUT
+  ---------
+  Use flexbox for everything:
+
+    body → column flex (full height)
+    .topbar → row flex (logo, search, user)
+    .main-layout → row flex (sidebar + editor)
+    .sidebar → column flex (button + scrollable list)
+    .editor-area → column flex (fills remaining space)
+    .note-editor → column flex (toolbar + title + textarea)
+
+  The textarea gets flex:1 so it fills all available height.
+
+
+  D) DARK THEME DETAILS
+  ---------------------
+  - Background: near-black with a blue tint (#080c12)
+  - Surfaces: slightly lighter (#141e2e, #0d1320)
+  - Borders: subtle dark blue (#1e2f46)
+  - Grid background: faint cyan lines on the editor area
+    using CSS background-image with linear-gradient
+  - Glow effects: box-shadow with rgba accent colors
+  - Transitions on all interactive elements (0.2s ease)
+
+
+  E) RESPONSIVE DESIGN
+  --------------------
+  Add media queries for smaller screens:
+
+    @media (max-width: 680px)
+      → Shrink sidebar width, hide search bar
+
+    @media (max-width: 480px)
+      → Stack sidebar on top of editor
+      → Make sidebar horizontal scrollable strip
+
+
+----------------------------------------------------------------
+STEP 5 — BUILD THE JAVASCRIPT (static/script.js)
+----------------------------------------------------------------
+
+The JS handles all interactivity with no page reloads.
+
+
+  A) STATE VARIABLES
+  ------------------
+  Three global variables track app state:
+
+      let currentNoteId = null;  // which note is open
+      let isDirty = false;       // unsaved changes?
+      let autoSaveTimer = null;  // autosave timeout ref
+
+
+  B) STAR GENERATION
+  ------------------
+  On load, generate 180 star divs dynamically and append
+  them to the #stars container. Give each random:
+    - width and height (0.5px to 3px)
+    - left and top position (0% to 100%)
+    - animation duration and delay (CSS variables)
+
+
+  C) INTRO SEQUENCE
+  -----------------
+  Call generateStars() then set a setTimeout for 4.9 seconds.
+  When it fires, hide the intro screen and call
+  checkAuthAndShow() to decide what to display next.
+
+
+  D) AUTH FLOW
+  ------------
+  checkAuthAndShow():
+    - Fetch GET /api/me
+    - If authenticated → call showApp(username)
+    - If not → call showAuth()
+
+  showAuth():
+    - Remove 'hidden' from the auth modal
+
+  showApp(username):
+    - Hide auth modal
+    - Show #app div
+    - Display username in top bar
+    - Call loadNotes()
+
+  doLogin() and doRegister():
+    - Read form input values
+    - POST to /api/login or /api/register
+    - On success → showApp()
+    - On error → showAuthError()
+
+  doLogout():
+    - POST to /api/logout
+    - Clear state
+    - Show auth modal again
+
+
+  E) LOADING NOTES
+  ----------------
+  loadNotes(query):
+    - Fetch GET /api/notes (with optional ?q= search param)
+    - Call renderNotesList() with the returned array
+
+  renderNotesList(notes):
+    - Clear the sidebar list
+    - If empty → show a message
+    - Otherwise → build HTML for each note item:
+        title, preview text, formatted date
+    - Inject into #notesList
+    - Mark the currently open note as active
+
+
+  F) OPENING A NOTE
+  -----------------
+  openNote(id):
+    - If there are unsaved changes, save first
+    - Fetch GET /api/notes/:id
+    - Populate the title input and content textarea
+    - Update the meta info line
+    - Show the editor, hide the empty state
+    - Mark the note as active in the sidebar
+    - Call markClean()
+
+
+  G) CREATING A NOTE
+  ------------------
+  newNote():
+    - Save current note if dirty
+    - POST to /api/notes with empty title and content
+    - Set currentNoteId to the new note's ID
+    - Clear the editor fields
+    - Show the editor
+    - Reload the notes list
+    - Focus the title input
+
+
+  H) SAVING A NOTE
+  ----------------
+  saveNote(silent):
+    - If no currentNoteId, return early
+    - Read title and content from the editor
+    - PUT to /api/notes/:id with the new values
+    - On success → update meta info, call markClean()
+    - If not silent → reload the full notes list
+    - If silent → just update the sidebar item in place
+
+
+  I) DELETING A NOTE
+  ------------------
+  deleteNote():
+    - Confirm with the user via window.confirm()
+    - DELETE to /api/notes/:id
+    - Reset currentNoteId to null
+    - Show the empty state
+    - Reload the notes list
+
+
+  J) EXPORTING A NOTE
+  -------------------
+  exportNote():
+    - Redirect to /api/notes/:id/export
+    - The browser triggers a file download automatically
+
+
+  K) SEARCH
+  ---------
+  searchNotes():
+    - Read the search input value
+    - Call loadNotes(query) after a 300ms debounce
+    - Debouncing prevents a request on every single keystroke
+
+
+  L) AUTO-SAVE
+  ------------
+  markDirty():
+    - Set isDirty to true
+    - Update the save status indicator to "● unsaved"
+    - Clear any existing autoSaveTimer
+    - Set a new 2-second timeout that calls saveNote(true)
+
+  markClean():
+    - Set isDirty to false
+    - Update the save status indicator to "● saved"
+
+  Call markDirty() on every input event in the title
+  and content fields.
+
+
+  M) KEYBOARD SHORTCUTS
+  ---------------------
+  Listen for keydown events on the document:
+
+    Ctrl+S → preventDefault(), call saveNote()
+    Ctrl+N → preventDefault(), call newNote()
+    Enter  → Submit whichever auth form is active
+
+
+  N) UTILITY FUNCTIONS
+  --------------------
+  formatDate(dtStr):
+    - Parse the SQLite datetime string
+    - Return a human-readable format
+    - Example: "Feb 19, 2026, 03:45 PM"
+
+  escapeHtml(str):
+    - Create a temporary div, set textContent, read innerHTML
+    - Prevents XSS when injecting note titles into the DOM
+
+
+----------------------------------------------------------------
+STEP 6 — TEST THE APP
+----------------------------------------------------------------
+
+  1. Run: python app.py
+  2. Open: http://localhost:5000
+  3. Watch the UFO animation play
+  4. Register a new account
+  5. Create a few notes
+  6. Test search, auto-save, export, and delete
+  7. Log out and log back in
+  8. Confirm notes persist after logout
+
+
+----------------------------------------------------------------
+STEP 7 — PUSH TO GITHUB
+----------------------------------------------------------------
+
+  git init
+  echo "liggs.db" >> .gitignore
+  echo "__pycache__/" >> .gitignore
+  git add .
+  git commit -m "Initial commit — Liggs notebook app"
+  git remote add origin https://github.com/yourusername/liggs.git
+  git branch -M main
+  git push -u origin main
+
+
+----------------------------------------------------------------
+KEY CONCEPTS USED IN THIS PROJECT
+----------------------------------------------------------------
+
+  Flask routing         → @app.route() decorators
+  SQLite                → Lightweight file-based database
+  Sessions              → Server-side login state (Flask)
+  Password hashing      → SHA-256 via hashlib
+  REST API              → GET, POST, PUT, DELETE endpoints
+  Fetch API             → AJAX calls without page reloads
+  CSS animations        → @keyframes for UFO movement
+  CSS flexbox           → All layout and alignment
+  CSS variables         → Consistent theming
+  Debouncing            → Delays search/save to reduce calls
+  Event delegation      → Keyboard shortcuts on document
+  XSS prevention        → escapeHtml() for dynamic content
+  Responsive design     → Media queries for mobile support
+
+
+----------------------------------------------------------------
+               HAPPY BUILDING! 🛸
+================================================================
