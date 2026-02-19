@@ -1,0 +1,194 @@
+================================================================
+                     LIGGS — HOW TO USE
+           Your Futuristic Notebook App Guide
+================================================================
+
+----------------------------------------------------------------
+1. GETTING STARTED
+----------------------------------------------------------------
+
+INSTALLATION:
+  1. Make sure Python 3.7+ is installed on your machine
+  2. Open your terminal or command prompt
+  3. Navigate to the liggs folder:
+       cd path/to/liggs
+  4. Install the required dependency:
+       pip install flask
+  5. Run the app:
+       python app.py
+  6. Open your browser and go to:
+       http://localhost:5000
+
+That's it! The app is now running locally on your machine.
+The database (liggs.db) is created automatically on first run.
+
+
+----------------------------------------------------------------
+2. INTRO ANIMATION
+----------------------------------------------------------------
+
+When you first open Liggs, you'll see:
+  - A dark star field
+  - A UFO flying in from the top of the screen
+  - The UFO hovering with glowing colored lights
+  - The UFO rocketing away
+  - The main Liggs app fading in smoothly
+
+This animation plays every time you open or refresh the page.
+
+
+----------------------------------------------------------------
+3. CREATING AN ACCOUNT
+----------------------------------------------------------------
+
+  1. After the animation, you'll see the Sign In screen
+  2. Click the "Register" tab
+  3. Enter a username of your choice
+  4. Enter a password (minimum 4 characters)
+  5. Click "Create Account"
+  6. You'll be logged in automatically
+
+Your account keeps your notes private and separate from
+other users on the same app.
+
+
+----------------------------------------------------------------
+4. LOGGING IN
+----------------------------------------------------------------
+
+  1. On the Sign In screen, enter your username and password
+  2. Click "Enter the Void"
+  3. You'll be taken directly to your notes
+
+To log out, click the "↪ Out" button in the top right corner.
+
+
+----------------------------------------------------------------
+5. CREATING A NOTE
+----------------------------------------------------------------
+
+  Option A: Click the "+ New Note" button in the sidebar
+  Option B: Press Ctrl + N on your keyboard
+
+A blank note will open in the editor with:
+  - A title field at the top
+  - A large writing area below
+
+
+----------------------------------------------------------------
+6. WRITING & EDITING A NOTE
+----------------------------------------------------------------
+
+  1. Click on the title field and type your note title
+  2. Click on the writing area and start typing your content
+  3. Your note is saved automatically after 2 seconds
+     of inactivity (you'll see "● saved" in the top bar)
+  4. You can also manually save by:
+       - Clicking the "Save" button
+       - Pressing Ctrl + S on your keyboard
+
+
+----------------------------------------------------------------
+7. SWITCHING BETWEEN NOTES
+----------------------------------------------------------------
+
+  - All your notes appear in the sidebar on the left
+  - Each note shows the title, a short preview, and the
+    last updated time
+  - Click any note in the sidebar to open it
+  - Your current note auto-saves before switching
+
+
+----------------------------------------------------------------
+8. SEARCHING NOTES
+----------------------------------------------------------------
+
+  1. Click the search bar at the top of the screen
+  2. Start typing — results filter in real time
+  3. The sidebar updates instantly showing matching notes
+  4. Clear the search bar to see all notes again
+
+Search works across both note titles and note content.
+
+
+----------------------------------------------------------------
+9. DELETING A NOTE
+----------------------------------------------------------------
+
+  1. Open the note you want to delete
+  2. Click the "✕ Delete" button in the top right of the editor
+  3. Confirm the deletion in the popup dialog
+  4. The note is permanently removed
+
+Warning: Deletion cannot be undone.
+
+
+----------------------------------------------------------------
+10. EXPORTING A NOTE
+----------------------------------------------------------------
+
+  1. Open the note you want to export
+  2. Click the "↓ Export" button in the editor toolbar
+  3. A .txt file will download automatically to your device
+
+The exported file includes:
+  - Note title
+  - Creation date
+  - Last updated date
+  - Full note content
+
+
+----------------------------------------------------------------
+11. KEYBOARD SHORTCUTS
+----------------------------------------------------------------
+
+  Ctrl + S    →   Save current note
+  Ctrl + N    →   Create a new note
+  Enter       →   Submit login or register form
+
+
+----------------------------------------------------------------
+12. TIPS & TRICKS
+----------------------------------------------------------------
+
+  ✦ Auto-save kicks in 2 seconds after you stop typing —
+    you rarely need to manually save.
+
+  ✦ Keep your note titles descriptive so they're easy
+    to find later in the sidebar.
+
+  ✦ Use the search bar to quickly jump to any note
+    without scrolling through the list.
+
+  ✦ Export important notes as .txt backups before
+    clearing or reinstalling the app.
+
+  ✦ The database file (liggs.db) holds all your data.
+    Back it up if you want to preserve your notes.
+
+
+----------------------------------------------------------------
+13. TROUBLESHOOTING
+----------------------------------------------------------------
+
+App won't start?
+  → Make sure Flask is installed: pip install flask
+  → Try: python3 app.py instead of python app.py
+
+Port already in use?
+  → Open app.py and change the last line to:
+      app.run(debug=True, port=5001)
+  → Then visit: http://localhost:5001
+
+Can't log in?
+  → Double-check your username and password
+  → Passwords are case-sensitive
+
+Lost your notes?
+  → Make sure liggs.db exists in the liggs folder
+  → Do not delete liggs.db — it stores all your data
+
+
+----------------------------------------------------------------
+                  ENJOY USING LIGGS! 🛸
+================================================================
